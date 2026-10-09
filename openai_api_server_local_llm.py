@@ -714,7 +714,7 @@ async def root():
     }
 
 
-if __name__ == "__main__":
+def main():
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -745,3 +745,7 @@ if __name__ == "__main__":
         port=args.port,
         reload=False  # Disable reload to prevent model reloading
     )
+
+
+if __name__ == "__main__":
+    main()
