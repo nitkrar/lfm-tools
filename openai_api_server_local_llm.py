@@ -4,6 +4,7 @@ OpenAI-compatible API server with MCP tool calling using local LiquidAI model
 import ast
 import asyncio
 import json
+import os
 import uuid
 import re
 import time
@@ -503,9 +504,12 @@ async def lifespan(app: FastAPI):
         traceback.print_exc()
 
     try:
-        # Adjust the path to your downloaded model
-        model_path = "models/LFM2.5-350M-Q4_K_M.gguf"  # Update this path
-        llm_manager.load_model(model_path, n_ctx=2048, verbose=True)
+        # Configurable via CLI (see __main__), passed through the environment so
+        # the values survive uvicorn re-importing this module by name. Defaults
+        # match the previously hardcoded values.
+        model_path = os.environ.get("LFM_MODEL", "models/LFM2.5-350M-Q4_K_M.gguf")
+        n_ctx = int(os.environ.get("LFM_CTX", "2048"))
+        llm_manager.load_model(model_path, n_ctx=n_ctx, verbose=True)
     except Exception as e:
         print(f"✗ Failed to load local model: {e}")
         import traceback
@@ -711,9 +715,33 @@ async def root():
 
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="OpenAI-compatible API server with MCP tool calling using a local LiquidAI model"
+    )
+    parser.add_argument(
+        "--model", default="models/LFM2.5-350M-Q4_K_M.gguf",
+        help="Path to the GGUF model (default: %(default)s)")
+    parser.add_argument(
+        "--ctx", type=int, default=2048,
+        help="Context window size (default: %(default)s)")
+    parser.add_argument(
+        "--host", default="0.0.0.0",
+        help="Host interface to bind (default: %(default)s)")
+    parser.add_argument(
+        "--port", type=int, default=8000,
+        help="Port to bind (default: %(default)s)")
+    args = parser.parse_args()
+
+    # uvicorn re-imports this module by name, so module globals set here are not
+    # visible to the app's lifespan; hand the model settings over via the env.
+    os.environ["LFM_MODEL"] = args.model
+    os.environ["LFM_CTX"] = str(args.ctx)
+
     uvicorn.run(
         "openai_api_server_local_llm:app",
-        host="0.0.0.0",
-        port=8000,
+        host=args.host,
+        port=args.port,
         reload=False  # Disable reload to prevent model reloading
     )
