@@ -82,17 +82,23 @@ was a deliberate fix after repeated format mismatches — see Known Gotchas.
 
 ```bash
 # using uv (recommended)
-uv sync
+uv sync --extra full
 
 # or plain pip
-pip install -e .
+pip install -e ".[full]"
+```
+
+To install only the `lfm-server` command, without the `full` extra's
+torch, transformers and accelerate (lfm-server does not use them):
+
+```bash
+uv tool install git+https://github.com/sdeseille/lfm-tools
 ```
 
 `pyproject.toml` dependencies (as currently pinned):
 
 ```toml
 dependencies = [
-    "accelerate>=1.14.0",
     "fastapi>=0.139.2",
     "gunicorn>=26.0.0",
     "llama-cpp-python>=0.3.34",
@@ -100,9 +106,14 @@ dependencies = [
     "pydantic>=2.13.4",
     "pytz>=2026.2",
     "requests>=2.34.2",
+    "uvicorn[standard]>=0.51.0",
+]
+
+[project.optional-dependencies]
+full = [
+    "accelerate>=1.14.0",
     "torch>=2.13.0",
     "transformers>=5.14.1",
-    "uvicorn[standard]>=0.51.0",
 ]
 ```
 
